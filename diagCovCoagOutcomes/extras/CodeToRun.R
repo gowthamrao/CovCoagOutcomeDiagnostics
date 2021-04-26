@@ -1,67 +1,62 @@
-
-
-# Build the package
-# Build, install and restart
-if("diagCovCoagOutcomes" %in% (.packages())){
-detach("package:diagCovCoagOutcomes", unload=TRUE)}
-library(CohortDiagnostics)
-library(diagCovCoagOutcomes)
-
-#install.packages("renv") # if not already installed, install renv from CRAN
-renv::activate() # activate renv
-renv::restore() # this should prompt you to install the various packages required for the study
-
-library(shiny)
-library(shinydashboard)
-library(shinyWidgets)
-library(plotly)
-library(magrittr)
-
-# Specify where the results files will be saved:
-outputFolder <- "...."
-
-# Optional: specify where the temporary files will be created:
-options(andromedaTempFolder = "C/andromedaTemp")
+library(CovCoagOutcomeDiagnosticsStudy)
 
 # Maximum number of cores to be used:
 maxCores <- parallel::detectCores()
 
+# The folder where the study intermediate and result files will be written:
+outputFolder <- "s:/CovCoagOutcomeDiagnosticsStudy"
+
 # Details for connecting to the server:
-connectionDetails <- DatabaseConnector::createConnectionDetails("....")
-oracleTempSchema <- NULL
-cdmDatabaseSchema <- "...."
-cohortDatabaseSchema <- "...."
-cohortTable <- "diagCovCoagOutcomesCohorts" 
-databaseId <- "...."
-databaseName <- "...."
-databaseDescription <- "...."
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
 
-# Use this to run the cohorttDiagnostics. 
-# The results will be stored in the diagnosticsExport subfolder of the outputFolder. 
-# This can be shared between sites.
-diagCovCoagOutcomes::runCohortDiagnostics(connectionDetails = connectionDetails,
-                                     cdmDatabaseSchema = cdmDatabaseSchema,
-                                     cohortDatabaseSchema = cohortDatabaseSchema,
-                                     cohortTable = cohortTable,
-                                     oracleTempSchema = oracleTempSchema,
-                                     outputFolder = outputFolder,
-                                     databaseId = databaseId,
-                                     databaseName = databaseName,
-                                     databaseDescription = databaseDescription,
-                                     createCohorts = TRUE,
-                                     runInclusionStatistics = TRUE,
-                                     runIncludedSourceConcepts = TRUE,
-                                     runOrphanConcepts = TRUE,
-                                     runTimeDistributions = TRUE,
-                                     runBreakdownIndexEvents = TRUE, 
-                                     runIncidenceRates = TRUE,
-                                     runCohortOverlap = TRUE,
-                                     runCohortCharacterization = TRUE,
-                                     runTemporalCohortCharacterization = TRUE,
-                                     minCellCount = 5)
+# The name of the database schema where the CDM data can be found:
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
 
-# To view your results:
-CohortDiagnostics::preMergeDiagnosticsFiles(file.path(outputFolder, "diagnosticsExport"))
-CohortDiagnostics::launchDiagnosticsExplorer(file.path(outputFolder, "diagnosticsExport"))
+# The name of the database schema and table where the study-specific cohorts will be instantiated:
+cohortDatabaseSchema <- "scratch.dbo"
+cohortTable <- "rao_skeleton"
+
+# Some meta-information that will be used by the export function:
+databaseId <- "Synpuf"
+databaseName <- "Medicare Claims Synthetic Public Use Files (SynPUFs)"
+databaseDescription <- "Medicare Claims Synthetic Public Use Files (SynPUFs) were created to allow interested parties to gain familiarity using Medicare claims data while protecting beneficiary privacy. These files are intended to promote development of software and applications that utilize files in this format, train researchers on the use and complexities of Centers for Medicare and Medicaid Services (CMS) claims, and support safe data mining innovations. The SynPUFs were created by combining randomized information from multiple unique beneficiaries and changing variable values. This randomization and combining of beneficiary information ensures privacy of health information."
+
+# For Oracle: define a schema that can be used to emulate temp tables:
+tempEmulationSchema <- NULL
+
+runCohortDiagnostics(packageName = "CovCoagOutcomeDiagnosticsStudy",
+                     connectionDetails = connectionDetails,
+                     cdmDatabaseSchema = cdmDatabaseSchema,
+                     cohortDatabaseSchema = cohortDatabaseSchema,
+                     cohortTable = cohortTable,
+                     tempEmulationSchema = tempEmulationSchema,
+                     outputFolder = outputFolder,
+                     databaseId = databaseId,
+                     databaseName = databaseName,
+                     databaseDescription = databaseDescription,
+                     runCohortCharacterization = TRUE,
+                     runCohortOverlap = TRUE,
+                     runOrphanConcepts = TRUE,
+                     runVisitContext = TRUE,
+                     runIncludedSourceConcepts = TRUE,
+                     runTimeDistributions = TRUE,
+                     runTemporalCohortCharacterization = TRUE,
+                     runBreakdownIndexEvents = TRUE,
+                     runInclusionStatistics = TRUE,
+                     runIncidenceRates = TRUE,
+                     createCohorts = TRUE,
+                     minCellCount = 0)
+
+CohortDiagnostics::preMergeDiagnosticsFiles(dataFolder = outputFolder)
+
+CohortDiagnostics::launchDiagnosticsExplorer(dataFolder = outputFolder)
 
 
+# Upload the results to the OHDSI SFTP server:
+privateKeyFileName <- ""
+userName <- ""
+CovCoagOutcomeDiagnosticsStudy::uploadResults(outputFolder, privateKeyFileName, userName)

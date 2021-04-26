@@ -1,20 +1,24 @@
-Package: diagCovCoagOutcomes
+Package: CovCoagOutcomeDiagnosticsStudy
 Type: Package
-Title: A Package Skeleton for Cohort Diagnostics
+Title: A tudy package that generates cohort diagnostics output based on Skeleton data set
 Version: 0.0.1
-Author: Martijn Schuemie [aut, cre]
-Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
-Description: A skeleton package, to be used as a starting point when you just want to run cohort diagnostics.
+Author: Gowtham Rao [aut, cre]
+Maintainer: Gowtham Rao <rao@ohdsi.org>
+Description: A package that generates cohort diagnostics output based on Skeleton data set.
 Depends:
-    DatabaseConnector (>= 2.2.0)
 Imports:
-	CohortDiagnostics
+	CohortDiagnostics (>= 2.1.0),
+	ParallelLogger (>= 2.0.0),
+	DatabaseConnector (>= 4.0.2)
 Suggests:
     knitr,
     rmarkdown,
     ROhdsiWebApi,
-    OhdsiRTools
-License: Apache License 2.0
+    OhdsiRTools,
+    OhdsiSharing
+License: Apache License (>= 2)
 VignetteBuilder: knitr
 LazyData: TRUE
 RoxygenNote: 7.1.1
+Encoding: UTF-8
+Language: en-US
